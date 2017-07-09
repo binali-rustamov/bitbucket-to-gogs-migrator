@@ -18,7 +18,7 @@ var endpoints = {
         "all": "https://api.bitbucket.org/2.0/repositories/" + conf.bitbucket.user
     },
     "gogs": {
-        "migrate": conf.gogs.protocol + "://" + conf.gogs.url + "/api/v1/repos/migrate"
+        "migrate": conf.gogs.protocol + "://" + conf.gogs.url + "/api/v1/repos/migrate?token=" + conf.gogs.token
     }
 };
 

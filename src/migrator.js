@@ -8,17 +8,18 @@ function Migrator(endpoints, conf) {
     this.repos = [];
 }
 
-Migrator.prototype.startMigration = function() {
+Migrator.prototype.startMigration = function () {
     this.getAllRepos()
-    .then(function(repos) {
-        return this.migrateRepos(repos);
-    }.bind(this))
-    .then(function(){
-        console.log("Finished, "+this.repos.length+" repos migrated");
-    });
+        .then(function (repos) {
+            console.log(repos);
+            return this.migrateRepos(repos);
+        }.bind(this))
+        .then(function () {
+            console.log("Finished, " + this.repos.length + " repos migrated");
+        });
 }
 
-Migrator.prototype.getAllRepos = function() {
+Migrator.prototype.getAllRepos = function () {
     var bb = this.conf.bitbucket,
         gogs = this.conf.gogs,
         realUser = bb.team === null ? bb.user : bb.team,
@@ -30,12 +31,12 @@ Migrator.prototype.getAllRepos = function() {
     return deferred.promise;
 }
 
-Migrator.prototype.getRepoSet = function(uri, deferred) {
+Migrator.prototype.getRepoSet = function (uri, deferred) {
     var bb = this.conf.bitbucket,
         gogs = this.conf.gogs,
         realUser = bb.team === null ? bb.user : bb.team;
 
-    console.log("Getting repos from: "+uri);
+    console.log("Getting repos from: " + uri);
 
     request({
         method: 'GET',
@@ -44,19 +45,20 @@ Migrator.prototype.getRepoSet = function(uri, deferred) {
             'user': bb.user,
             'pass': bb.password,
         }
-    }, function(err, res, body) {
+    }, function (err, res, body) {
         try {
             var rawData = JSON.parse(body);
         } catch (e) {
             console.error('\nInvalid JSON data received from BitBucket');
             console.error('Data received: ')
-            console.error('\t'+body + '\n');
-            console.error('Error: ' +e);
+            console.error('\t' + body + '\n');
+            console.error('Error: ' + e);
             process.exit(1);
         }
 
-        rawData.values.forEach(function(data) {
+        rawData.values.forEach(function (data) {
             this.repos.push(data.full_name);
+            console.log(data.full_name);
         }.bind(this));
 
         if (rawData.next) {
@@ -67,7 +69,7 @@ Migrator.prototype.getRepoSet = function(uri, deferred) {
     }.bind(this));
 }
 
-Migrator.prototype.migrateRepos = function(repos) {
+Migrator.prototype.migrateRepos = function (repos) {
     var deferred = Q.defer(),
         uri = this.endpoints.gogs.migrate;
 
@@ -76,44 +78,42 @@ Migrator.prototype.migrateRepos = function(repos) {
     return deferred.promise;
 }
 
-Migrator.prototype.migrate = function(repos, deferred) {
+Migrator.prototype.migrate = function (repos, deferred) {
     if (repos.length !== 0) {
         // We want to work with the last repo name
         var fullName = repos[repos.length - 1],
-            repoName = fullName.replace(this.user + '/', '');
+            repoName = fullName.toLowerCase().replace(this.user.toLowerCase() + '/', '');
 
         // Starts the migration through Gogs API
         var formData = {
-            username: this.conf.gogs.user,
-            password: this.conf.gogs.password,
-            url: 'https://bitbucket.org/' + fullName,
-            auth_username: this.conf.bitbucket.user,
-            auth_password: this.conf.bitbucket.password,
+            clone_addr: 'https://' + this.conf.bitbucket.user + ':' + this.conf.bitbucket.password + '@bitbucket.org/' + fullName + ".git",
+            // auth_username: this.conf.bitbucket.user,
+            // auth_password: this.conf.bitbucket.password,
             uid: this.conf.gogs.owner_id,
             repo_name: repoName,
-            mirror: 'false',
-            private: 'on'
+            mirror: false,
+            private: true
         };
-
         request({
             method: 'POST',
             uri: this.endpoints.gogs.migrate,
-            formData: formData
-        }, function(err, res, body) {
+            form: formData
+        }, function (err, res, body) {
+            console.log("Bla");
             if (err) {
                 console.error(err);
                 process.exit(1);
             }
             console.log(body);
-            console.log("Repository `"+fullName+"` has been migrated");
+            console.log("Repository `" + fullName + "` has been migrated");
 
             // Removes the element from the array, and calls ourself again
             repos.pop();
             this.migrate(repos, deferred);
         }.bind(this));
     } else {
-        deferred.resolve('Done');
-    };
-}
+        //deferred.resolve('Done');
+    }
+};
 
 module.exports = Migrator;

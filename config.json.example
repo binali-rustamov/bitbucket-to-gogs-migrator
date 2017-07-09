@@ -1,17 +1,16 @@
 {
     "base": {
-        "check_exists": false
+        "check_exists": true
     },
     "gogs": {
-        "url": "",
+        "url": "localhost",
         "protocol": "http",
-        "user": "",
-        "password": "",
-        "user_id_receiving": 0
+        "owner_id": 1,
+        "token": "from gogs for account"
     },
     "bitbucket": {
-        "user": "",
-        "password": "",
-        "team": ""
+        "user": "--",
+        "password": "--",
+        "team": "--"
     }
 }
